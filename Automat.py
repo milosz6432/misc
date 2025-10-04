@@ -1,15 +1,14 @@
 import random
 
-balance = 50  # startowy balans
-symbols = ["🍒", "🍋", "🍉", "💎", "⭐"]  # symbole kasynowe
-debt_used = False  # flaga czy już zadłużono rodzinę
+balance = 50  
+symbols = ["🍒", "🍋", "🍉", "💎", "⭐"]  
+debt_used = False  
 
 while True:
-    # potrącamy 5$ za grę
     balance -= 5
     print(f"\nTwoj balans: {balance} $")
 
-    # losowanie trzech symboli
+    # gambling
     a = random.choice(symbols)
     b = random.choice(symbols)
     c = random.choice(symbols)
@@ -27,7 +26,7 @@ while True:
     if balance < 5:
         print("Masz za mało pieniędzy, żeby grać dalej!")
 
-        if not debt_used:  # tylko raz można zadłużyć
+        if not debt_used:  
             debt_choice = input("Czy chcesz zadluzyc swoją rodzinę? (y/n): ")
             if debt_choice.lower() == "y":
                 balance += 100
@@ -42,7 +41,6 @@ while True:
             print(f"Koniec gry. Twój końcowy balans: {balance} $")
             break
 
-    # pytanie o kontynuację
     answer = input("Care to try again? (5 dollar) Type: y/n ")
     if answer.lower() != "y":
         print(f"Koniec gry. Twój końcowy balans: {balance} $")

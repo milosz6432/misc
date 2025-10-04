@@ -18,7 +18,6 @@ balance = 50
 highest_balance = balance  # przechowuje najwyższy balans
 debt_used = False
 
-# --- Funkcje gry ---
 def spin():
     global balance, debt_used, highest_balance
 
