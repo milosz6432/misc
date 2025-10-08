@@ -4,7 +4,6 @@ import random
 import threading
 import time
 
-# --- Konfiguracja gry ---
 symbols = ["🍒", "🍋", "🍉", "💎", "⭐"]
 symbol_rewards = {
     "🍒": 20,
@@ -15,7 +14,7 @@ symbol_rewards = {
 }
 
 balance = 50
-highest_balance = balance  # przechowuje najwyższy balans
+highest_balance = balance 
 debt_used = False
 
 def spin():
@@ -27,7 +26,7 @@ def spin():
             if messagebox.askyesno("Zadłużenie", "Czy chcesz zadłużyć swoją rodzinę na 100 $?"):
                 balance += 100
                 debt_used = True
-                # aktualizacja highest_balance po zadłużeniu
+                
                 if balance > highest_balance:
                     highest_balance = balance
                     highest_label.config(text=f"Highest: {highest_balance} $")
@@ -66,7 +65,7 @@ def animate_spin():
     else:
         result_label.config(text="❌ Spróbuj ponownie!")
 
-    # aktualizacja highest balance
+    #update balansu
     if balance > highest_balance:
         highest_balance = balance
         highest_label.config(text=f"Highest: {highest_balance} $")
@@ -80,7 +79,7 @@ def end_game():
     messagebox.showinfo("Koniec gry", f"Koniec gry! Twój końcowy balans: {balance} $\nNajwyższy balans: {highest_balance} $")
     root.quit()
 
-# --- Interfejs gry ---
+# gui
 root = tk.Tk()
 root.title("Slot Machine 🎰")
 root.geometry("400x300")
@@ -88,9 +87,8 @@ root.geometry("400x300")
 balance_label = tk.Label(root, text=f"Balans: {balance} $", font=("Arial", 14))
 balance_label.pack(pady=10)
 
-# Highest balance w rogu
 highest_label = tk.Label(root, text=f"Highest: {highest_balance} $", font=("Arial", 10))
-highest_label.place(x=300, y=10)  # pozycja w prawym górnym rogu
+highest_label.place(x=300, y=10)  
 
 frame = tk.Frame(root)
 frame.pack(pady=20)
