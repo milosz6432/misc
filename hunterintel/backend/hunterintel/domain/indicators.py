@@ -82,6 +82,17 @@ def refang(text: str) -> tuple[str, bool]:
     return text, text != original
 
 
+def asn_scope(number: int) -> str | None:
+    """Return a scope name for AS numbers that are not globally routable, else ``None``."""
+    if number in (0, 23456, 65535, 4294967295) or 65552 <= number <= 131071:
+        return "reserved"
+    if 64496 <= number <= 64511 or 65536 <= number <= 65551:
+        return "documentation"
+    if 64512 <= number <= 65534 or 4200000000 <= number <= 4294967294:
+        return "private-use"
+    return None
+
+
 # ── domains ──────────────────────────────────────────────────────────────────
 
 
@@ -318,7 +329,18 @@ def parse_indicator(raw: str, forced_type: IndicatorType | str | None = None) ->
         number = int(m.group(1))
         if not 0 < number < 2**32:
             raise IndicatorParseError("ASN out of range")
-        return ParsedIndicator(IndicatorType.ASN, f"AS{number}", raw, notes=notes)
+        scope = asn_scope(number)
+        return ParsedIndicator(
+            IndicatorType.ASN,
+            f"AS{number}",
+            raw,
+            scope=scope or "public",
+            remote_lookup_allowed=scope is None,
+            blocked_reason=(
+                f"AS{number} is in a {scope} range; remote lookups are disabled" if scope else None
+            ),
+            notes=notes,
+        )
 
     if forced is None or forced is IndicatorType.URL:
         looks_like_url = "://" in text or (forced is IndicatorType.URL)

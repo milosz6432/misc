@@ -51,7 +51,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S", "ASYNC"]
-ignore = ["S101", "B008", "ASYNC109"]  # ASYNC109: `timeout` is forwarded to httpx/httpcore, not re-implemented
+ignore = ["S101", "B008", "ASYNC109", "E501"]  # ASYNC109: `timeout` is forwarded to httpx/httpcore, not re-implemented
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S", "E501"]

@@ -228,3 +228,20 @@ def test_url_heuristics_fire_only_when_warranted() -> None:
     assert "idn_mixed_script" in flag_ids("http://pаypal.com/")
     assert "idn_punycode" in flag_ids("http://bücher.de/")
     assert "ip_literal_host" in flag_ids("http://2130706433/")
+
+
+@pytest.mark.parametrize(
+    "asn", ["AS64512", "AS65000", "AS4200000001", "AS64496", "AS23456", "AS65535"]
+)
+def test_non_public_asns_block_remote_lookups(asn: str) -> None:
+    p = parse_indicator(asn)
+    assert not p.remote_lookup_allowed and p.blocked_reason
+
+
+def test_public_asn_allows_lookups() -> None:
+    assert parse_indicator("AS13335").remote_lookup_allowed
+
+
+def test_as_zero_is_invalid() -> None:
+    with pytest.raises(IndicatorParseError):
+        parse_indicator("AS0")
