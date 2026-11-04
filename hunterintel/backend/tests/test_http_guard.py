@@ -250,3 +250,28 @@ async def test_probe_rejects_bad_start_url_immediately(
             await gw.probe_redirects("http://169.254.169.254/latest/meta-data/")
     finally:
         await gw.aclose()
+
+
+async def test_resolver_failure_is_a_clean_upstream_error_not_an_internal_one(
+    make_settings: Callable[..., object],
+) -> None:
+    """Regression: found by running the real server where DNS was unavailable."""
+    import socket
+
+    from hunterintel.core.http import UpstreamError
+
+    async def failing(host: str, port: int) -> list[str]:
+        raise socket.gaierror(-2, "Name or service not known")
+
+    s = make_settings()
+    gw = HttpGateway(
+        s,
+        MemoryRateLimiter(),
+        MemoryCache(),
+        transport=GuardedTransport(GuardedBackend(resolver=failing)),
+    )
+    try:
+        with pytest.raises(UpstreamError, match="cannot resolve"):
+            await gw.request("GET", "https://crt.sh/", provider="crtsh", allowed_hosts=["crt.sh"])
+    finally:
+        await gw.aclose()

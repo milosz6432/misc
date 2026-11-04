@@ -103,7 +103,13 @@ class GuardedBackend(httpcore.AsyncNetworkBackend):
 
     async def validated_addresses(self, host: str, port: int) -> list[str]:
         literal = parse_ip(host)
-        candidates = [str(literal)] if literal is not None else await self._resolver(host, port)
+        if literal is not None:
+            candidates = [str(literal)]
+        else:
+            try:
+                candidates = await self._resolver(host, port)
+            except OSError as exc:  # socket.gaierror & friends: an ordinary network failure
+                raise httpcore.ConnectError(f"cannot resolve {host!r}: {exc}") from exc
         if not candidates:
             raise httpcore.ConnectError(f"no addresses found for {host!r}")
         for candidate in candidates:
