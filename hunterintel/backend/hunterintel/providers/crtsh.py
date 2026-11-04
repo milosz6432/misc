@@ -148,7 +148,7 @@ class CrtShProvider(Provider):
         ]
         data["wildcards"] = [n for n in s["names"] if n.startswith("*")][:50]
         data["caveat"] = (
-            "Certificates prove a name was *requested and issued*, not that a host currently serves it."
+            "Certificates prove a name was requested and issued, not that a host currently serves it."
         )
         rels: list[RelationshipDraft] = []
         discovered: set[str] = set()

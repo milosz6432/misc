@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-ink-900 font-sans text-sm text-fg antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  ::selection {
+    @apply bg-accent/30;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #33445a transparent;
+  }
+  code,
+  pre,
+  .mono {
+    @apply font-mono;
+  }
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-lg border border-ink-600/70 bg-ink-800;
+  }
+  .card-h {
+    @apply flex items-center justify-between gap-3 border-b border-ink-600/70 px-4 py-2.5;
+  }
+  .h-label {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-fg-muted;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-ink-500 bg-ink-700 px-3 py-1.5 text-xs font-medium text-fg transition-colors hover:border-accent/60 hover:bg-ink-600 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-accent/70 bg-accent/15 text-accent hover:bg-accent/25;
+  }
+  .btn-danger {
+    @apply border-danger/50 text-danger hover:border-danger hover:bg-danger/10;
+  }
+  .btn-ghost {
+    @apply border-transparent bg-transparent hover:bg-ink-700;
+  }
+  .input {
+    @apply w-full rounded-md border border-ink-500 bg-ink-900 px-3 py-1.5 text-sm text-fg placeholder:text-fg-dim focus:border-accent focus:outline-none;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium leading-none;
+  }
+  .th {
+    @apply px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-fg-muted;
+  }
+  .td {
+    @apply px-3 py-2 align-top;
+  }
+}
