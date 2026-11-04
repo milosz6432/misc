@@ -258,7 +258,8 @@ def assess(
         )
 
     return Assessment(
-        risk_score=risk_score if (saw_any_signal or flags) else None,
+        # None (not 0) unless something actually contributed: 'risk 0' would imply a measurement
+        risk_score=risk_score if (saw_any_signal or any(w > 0 for w in flag_weights)) else None,
         confidence=confidence,
         verdict=verdict,
         freshness=state,

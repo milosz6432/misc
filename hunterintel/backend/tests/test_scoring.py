@@ -138,7 +138,7 @@ def test_heuristics_alone_never_convict_and_are_capped() -> None:
 
 def test_info_flags_do_not_move_risk() -> None:
     a = run([flags("rdap", "info")])
-    assert a.risk_score == 0 and a.verdict == "unknown" and len(a.risk_flags) == 1
+    assert a.risk_score is None and a.verdict == "unknown" and len(a.risk_flags) == 1
 
 
 def test_heuristics_add_to_reputation_without_double_counting_confidence() -> None:

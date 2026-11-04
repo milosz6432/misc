@@ -2,7 +2,7 @@
 
 Revision ID: 0001
 Revises:
-Create Date: 2026-11-04 14:53:26.753872
+Create Date: 2026-11-04 15:11:02.315693
 """
 
 from collections.abc import Sequence
@@ -31,6 +31,7 @@ def upgrade() -> None:
         sa.Column("ttl_days", sa.Integer(), nullable=False),
         sa.Column("first_seen", sa.DateTime(), nullable=False),
         sa.Column("last_seen", sa.DateTime(), nullable=False),
+        sa.Column("expires_at", sa.DateTime(), nullable=False),
         sa.Column("last_enriched_at", sa.DateTime(), nullable=True),
         sa.Column("risk_score", sa.Integer(), nullable=True),
         sa.Column("confidence", sa.Integer(), nullable=True),
@@ -41,6 +42,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("type", "value", name="uq_indicator_type_value"),
     )
     with op.batch_alter_table("indicators", schema=None) as batch_op:
+        batch_op.create_index(batch_op.f("ix_indicators_expires_at"), ["expires_at"], unique=False)
         batch_op.create_index(
             "ix_indicators_tracked_last_seen", ["tracked", "last_seen"], unique=False
         )
@@ -223,6 +225,7 @@ def downgrade() -> None:
     with op.batch_alter_table("indicators", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_indicators_type"))
         batch_op.drop_index("ix_indicators_tracked_last_seen")
+        batch_op.drop_index(batch_op.f("ix_indicators_expires_at"))
 
     op.drop_table("indicators")
     # ### end Alembic commands ###

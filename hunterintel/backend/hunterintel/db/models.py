@@ -12,7 +12,7 @@ Layout (see docs/ARCHITECTURE.md §3)::
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import (
@@ -26,6 +26,7 @@ from sqlalchemy import (
     Text,
     TypeDecorator,
     UniqueConstraint,
+    event,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -76,6 +77,9 @@ class Indicator(Base):
 
     first_seen: Mapped[datetime] = mapped_column(UTCDateTime, default=_now)
     last_seen: Mapped[datetime] = mapped_column(UTCDateTime, default=_now)
+    #: ``last_seen + ttl_days`` — maintained by the ORM events below so lists can filter/sort
+    #: on expiry in plain SQL on every database.
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime, index=True, default=_now)
     last_enriched_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
 
     # cached assessment (recomputed on every enrichment; detail views recompute freshness)
@@ -95,6 +99,13 @@ class Indicator(Base):
     tags: Mapped[list[IndicatorTag]] = relationship(
         back_populates="indicator", cascade="all, delete-orphan", passive_deletes=True
     )
+
+
+@event.listens_for(Indicator, "before_insert")
+@event.listens_for(Indicator, "before_update")
+def _sync_expiry(_mapper: Any, _connection: Any, target: Indicator) -> None:
+    last_seen = target.last_seen or _now()
+    target.expires_at = last_seen + timedelta(days=max(target.ttl_days or 90, 1))
 
 
 class Observation(Base):
