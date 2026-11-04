@@ -22,7 +22,7 @@ from hunterintel.providers.registry import build_registry
 from hunterintel.services.compare import compare_indicators
 from hunterintel.services.enrichment import EnrichmentService, PlanState
 from hunterintel.services.graph import build_graph
-from tests.helpers import FakeDns, json_response
+from tests.helpers import FakeDns, fresh_database_url, json_response
 from tests.test_providers_keyed import KEY, SHA256, VT_FILE
 from tests.test_providers_keyless import CT_ROWS, domain_doc, rdap_handler
 
@@ -31,7 +31,7 @@ OLD = datetime(2001, 1, 1, tzinfo=UTC)
 
 @pytest.fixture
 async def factory(tmp_path: Path) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
-    s = Settings(_env_file=None, database_url=f"sqlite+aiosqlite:///{tmp_path}/e.db")
+    s = Settings(_env_file=None, database_url=await fresh_database_url(tmp_path, "e"))
     engine = create_engine(s)
     await create_schema(engine)
     yield create_session_factory(engine)

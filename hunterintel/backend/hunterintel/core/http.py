@@ -25,6 +25,7 @@ import logging
 import time
 from collections.abc import Awaitable, Callable, Collection, Iterable, Mapping
 from dataclasses import dataclass, field
+from http.cookiejar import DefaultCookiePolicy
 from typing import Any
 from urllib.parse import urljoin
 
@@ -280,6 +281,10 @@ class HttpGateway:
             trust_env=False,
             headers={"User-Agent": settings.user_agent, "Accept-Encoding": "identity"},
         )
+        # httpx keeps a cookie jar by default. This gateway talks to untrusted destinations and
+        # must be stateless: accept no cookies at all, so nothing set by one hop (or one
+        # request) can ever be replayed on another.
+        self._client.cookies.jar.set_policy(DefaultCookiePolicy(allowed_domains=[]))
         self._global_spec = RateSpec(settings.global_outbound_per_second, 1.0)
 
     async def aclose(self) -> None:

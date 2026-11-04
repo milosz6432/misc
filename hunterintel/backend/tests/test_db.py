@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import os
 from collections.abc import AsyncIterator
 from pathlib import Path
 
@@ -10,7 +12,7 @@ from alembic.migration import MigrationContext
 from sqlalchemy import create_engine as create_sync_engine
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from alembic import command
 from hunterintel.config import Settings
@@ -24,13 +26,14 @@ from hunterintel.db.models import (
     Relationship,
 )
 from hunterintel.db.session import create_engine, create_schema, create_session_factory
+from tests.helpers import TEST_DB_ENV, fresh_database_url
 
 BACKEND = Path(__file__).resolve().parent.parent
 
 
 @pytest.fixture
 async def session_factory(tmp_path: Path) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
-    settings = Settings(_env_file=None, database_url=f"sqlite+aiosqlite:///{tmp_path}/t.db")
+    settings = Settings(_env_file=None, database_url=await fresh_database_url(tmp_path, "t"))
     engine = create_engine(settings)
     await create_schema(engine)
     yield create_session_factory(engine)
@@ -130,3 +133,24 @@ async def test_cascades_and_set_null(session_factory: async_sessionmaker[AsyncSe
         await s.delete(inv)
         await s.commit()
         assert (await s.execute(select(Finding).where(Finding.id == finding_id))).first() is None
+
+
+@pytest.mark.skipif(
+    not os.environ.get(TEST_DB_ENV, "").startswith("postgresql"),
+    reason=f"set {TEST_DB_ENV}=postgresql+asyncpg://… to verify migrations on PostgreSQL",
+)
+async def test_migrations_apply_and_match_models_on_postgres(tmp_path: Path) -> None:
+    url = await fresh_database_url(tmp_path, "pg")
+    cfg = Config(str(BACKEND / "alembic.ini"))
+    cfg.set_main_option("script_location", str(BACKEND / "alembic"))
+    cfg.cmd_opts = type("X", (), {"x": [f"url={url}"]})()  # type: ignore[attr-defined]
+    await asyncio.to_thread(command.upgrade, cfg, "head")
+
+    engine = create_async_engine(url)
+    async with engine.connect() as conn:
+        diff = await conn.run_sync(
+            lambda c: compare_metadata(MigrationContext.configure(c), Base.metadata)
+        )
+    await engine.dispose()
+    assert diff == [], f"models and migration disagree on PostgreSQL: {diff}"
+    await asyncio.to_thread(command.downgrade, cfg, "base")

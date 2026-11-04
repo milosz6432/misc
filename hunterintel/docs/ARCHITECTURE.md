@@ -128,7 +128,7 @@ Investigation ──< Finding / Note
 
 ## 7. API surface (`/api/v1`, OpenAPI at `/docs`)
 
-* `GET /providers` · `GET /health`
+* `GET /providers` · `GET /health` · `GET /stats`
 * `POST /indicators/classify` — local-only parse, zero egress
 * `POST /enrich/plan` — which providers would receive this indicator and why/why not
 * `POST /enrich` — run the plan, persist, score
@@ -139,7 +139,7 @@ Investigation ──< Finding / Note
 
 ## 8. Implementation plan (build order)
 
-Each step lands with its own tests before the next begins.
+Each step landed with its own tests before the next began (all nine are implemented; see the README for verification status).
 
 1. **Scaffold & config** — layout, `pyproject`, settings, `.env.example`.
 2. **Security core** — `netpolicy`, `HttpGateway`/`GuardedBackend`, rate limiter & cache (memory + Redis), redaction.
@@ -158,3 +158,16 @@ Each step lands with its own tests before the next begins.
 * crt.sh is a best-effort public service and frequently times out on large domains; that is surfaced, not hidden.
 * IP geolocation is approximate by nature. Registry (RIR) country ≠ physical location; databases are typically right at country level only.
 * Provider response schemas were implemented from vendor documentation and are covered by contract tests built from documented payload shapes; live calls require the relevant network egress and keys (see README → *Verification status*).
+
+## 10. Design decisions worth knowing
+
+* **Plan, then run.** `POST /indicators/classify` returns the *plan* (zero egress); `POST /enrich` runs only explicitly named providers (or the default plan). A provider that is blocked or unconfigured is recorded as a run with the reason rather than raising — the history therefore shows gaps, not just successes.
+* **Heuristics are capped and inferred.** Structural/registration heuristics add at most 30 points of risk and never create confidence, so they cannot convict on their own.
+* **Absence is not evidence.** `risk_score` is `null` unless something actually contributed; a 404/`no_results` is `no_data`; AbuseIPDB score 0 stays `unknown` unless allow-listed.
+* **Inferred edges are derived at read time** (shared IP / nameserver / certificate between domains), never stored, graded `weak`/`medium` with a caveat, and skipped for hubs with more than 8 domains (those are providers, not clues).
+* **Discovered ≠ adopted.** Endpoints of relationships are stored with `tracked = false`, so a certificate with 40 SANs does not flood the IOC list.
+* **Expiry in SQL.** `indicators.expires_at` (= `last_seen + ttl_days`) is maintained by ORM events so lists can filter/sort on it portably across SQLite and PostgreSQL.
+* **Findings snapshot their evidence**, so later re-enrichment cannot rewrite what an analyst concluded.
+* **TLP is enforced, not decorative.** TLP:RED / AMBER+STRICT investigations force `do_not_share` on members, and tightening TLP applies retroactively.
+* **File tool uses raw bodies**, not multipart, so the server never spools an upload to disk; bytes are hashed in memory and dropped.
+* **Gateway is stateless.** No cookie jar, no auth forwarded across hosts, no response bodies on the active probe.

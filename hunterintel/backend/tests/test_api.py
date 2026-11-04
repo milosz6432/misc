@@ -17,7 +17,7 @@ from hunterintel.api.app import create_app
 from hunterintel.config import Settings
 from hunterintel.db.models import Indicator
 from hunterintel.domain.evidence import utcnow
-from tests.helpers import FakeDns
+from tests.helpers import FakeDns, fresh_database_url
 from tests.test_enrichment import example_dns, routing_handler
 from tests.test_providers_keyed import KEY, SHA256
 
@@ -33,7 +33,7 @@ async def make_client(
     dns: FakeDns | None = None,
     **overrides: Any,
 ) -> AsyncIterator[httpx.AsyncClient]:
-    settings = make_settings(database_url=f"sqlite+aiosqlite:///{tmp_path}/api.db", **overrides)
+    settings = make_settings(database_url=await fresh_database_url(tmp_path, "api"), **overrides)
     app = create_app(
         settings, transport=httpx.MockTransport(routing_handler(calls)), dns=dns or example_dns()
     )

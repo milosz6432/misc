@@ -130,7 +130,10 @@ async def local_server() -> AsyncIterator[tuple[int, list[bytes]]]:
                 b"HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1:1/x\r\nContent-Length: 0\r\n\r\n"
             )
         elif b"/redirect-next" in first:
-            writer.write(b"HTTP/1.1 301 Moved\r\nLocation: /final\r\nContent-Length: 0\r\n\r\n")
+            writer.write(
+                b"HTTP/1.1 301 Moved\r\nLocation: /final\r\nSet-Cookie: sid=abc123; Path=/\r\n"
+                b"Content-Length: 0\r\n\r\n"
+            )
         else:
             body = b"hello"
             writer.write(
@@ -203,7 +206,9 @@ async def test_probe_follows_public_chain_and_never_reads_body(
     assert result.hops[0].method == "HEAD"
     assert result.final_url == f"http://chain.example.net:{port}/final"
     assert result.hops[-1].remote_ip == "127.0.0.1"
-    assert all(b"Cookie" not in r and b"Authorization" not in r for r in received)
+    # The first response SET a cookie. It must never be replayed on the next hop.
+    assert len(received) == 2
+    assert all(b"cookie" not in r.lower() and b"authorization" not in r.lower() for r in received)
 
 
 async def test_probe_refuses_redirect_into_private_space(

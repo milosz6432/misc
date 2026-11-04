@@ -1,0 +1,15 @@
+{
+  "title": "Getting started — well-known public infrastructure",
+  "description": "Seed indicators that are public, long-lived and unremarkable, so you can see what real DNS, RDAP, Team Cymru and certificate-transparency results look like. Nothing here is pre-computed or fabricated: every observation is fetched live when you run the enrichment, and an unreachable source shows up as an explicit gap.",
+  "tlp": "clear",
+  "suggested_providers": ["local", "dns", "rdap", "cymru", "crtsh"],
+  "indicators": [
+    { "value": "example.com", "note": "IANA-reserved example domain. Good for seeing the DNS, RDAP and CT views end to end." },
+    { "value": "1.1.1.1", "note": "A well-known public DNS resolver address. Shows reverse DNS with forward confirmation, RDAP network ownership and the origin AS." },
+    { "value": "AS13335", "note": "An autonomous system number. Shows RDAP AS registration and the AS name lookup." }
+  ],
+  "notes": [
+    "Registry country on IPs and ASNs is where the block was allocated, not where hosts physically are.",
+    "Compare the 'Verified' and 'Provider claim' badges: DNS and RDAP come straight from the source of record, while Team Cymru and crt.sh are third-party aggregators."
+  ]
+}
