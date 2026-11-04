@@ -39,6 +39,10 @@ def call(api: str, token: str | None, method: str, path: str, body: Any = None) 
 
 
 def main() -> None:
+    # Legacy Windows consoles (cp437/cp1252) cannot print every character the API returns.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("sample", help="path to a samples/*.json file")
     ap.add_argument("--api", default=os.environ.get("HUNTERINTEL_API", "http://127.0.0.1:8000"))
@@ -70,7 +74,7 @@ def main() -> None:
 
     if not args.enrich:
         print("\nNo enrichment was run, so nothing was sent anywhere. Re-run with --enrich to collect evidence.")
-        print(f"Open: {args.api.replace(':8000', ':8080') if ':8000' in args.api else args.api}/investigations/{inv['id']}")
+        print(f"Open the Investigations page in the web UI to find investigation #{inv['id']}.")
         return
 
     print("\nQuery plan:")

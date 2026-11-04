@@ -43,6 +43,8 @@ docker compose up --build
 
 Open <http://127.0.0.1:8080>. Only the web container is published, and only on loopback. Put a TLS-terminating reverse proxy in front of it and set `HUNTERINTEL_API_TOKEN` before exposing it to anyone else.
 
+> **On Windows?** Follow the step-by-step [Windows guide](docs/WINDOWS_GUIDE.md) (Docker Desktop, WSL2 or native PowerShell, plus a tour of using the tool).
+
 ### Local development
 
 ```bash

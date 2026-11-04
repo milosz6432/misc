@@ -1,0 +1,6 @@
+# Keep LF everywhere in this project so Docker builds, nginx config and shell snippets behave the same
+# on Windows checkouts (where Git would otherwise convert to CRLF).
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.woff2 binary
