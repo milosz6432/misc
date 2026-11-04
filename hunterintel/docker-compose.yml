@@ -1,0 +1,79 @@
+# HunterIntel — API + web UI + PostgreSQL + Redis.
+#   cp .env.example .env   (set POSTGRES_PASSWORD, optionally API keys and HUNTERINTEL_API_TOKEN)
+#   docker compose up --build
+#   open http://127.0.0.1:8080
+#
+# Only the web container is published, and only on loopback. Put your own TLS-terminating
+# reverse proxy in front before exposing it, and set HUNTERINTEL_API_TOKEN.
+name: hunterintel
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hunterintel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: hunterintel
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hunterintel -d hunterintel"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Used for shared outbound rate limiting + response cache; nothing durable lives here.
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      HUNTERINTEL_ENVIRONMENT: production
+      HUNTERINTEL_DATABASE_URL: postgresql+asyncpg://hunterintel:${POSTGRES_PASSWORD}@postgres:5432/hunterintel
+      HUNTERINTEL_AUTO_CREATE_SCHEMA: "false"   # schema is managed by Alembic (run on start)
+      HUNTERINTEL_REDIS_URL: redis://redis:6379/0
+      HUNTERINTEL_CORS_ORIGINS: http://127.0.0.1:8080,http://localhost:8080
+      HUNTERINTEL_API_TOKEN: ${HUNTERINTEL_API_TOKEN:-}
+      HUNTERINTEL_DEFAULT_SHARING: ${HUNTERINTEL_DEFAULT_SHARING:-public}
+      HUNTERINTEL_ALLOW_ACTIVE_PROBES: ${HUNTERINTEL_ALLOW_ACTIVE_PROBES:-false}
+      HUNTERINTEL_DNS_RESOLVERS: ${HUNTERINTEL_DNS_RESOLVERS:-1.1.1.1,9.9.9.9}
+      HUNTERINTEL_PROVIDER_RATE_LIMITS: ${HUNTERINTEL_PROVIDER_RATE_LIMITS:-}
+      HUNTERINTEL_GEOIP_DB_PATH: ${HUNTERINTEL_GEOIP_DB_PATH:-}
+      # Provider keys are optional; empty means "not configured".
+      VIRUSTOTAL_API_KEY: ${VIRUSTOTAL_API_KEY:-}
+      ABUSEIPDB_API_KEY: ${ABUSEIPDB_API_KEY:-}
+      OTX_API_KEY: ${OTX_API_KEY:-}
+      ABUSECH_AUTH_KEY: ${ABUSECH_AUTH_KEY:-}
+    volumes:
+      - hunterintel-data:/data   # mount a GeoLite2/DB-IP .mmdb here and point HUNTERINTEL_GEOIP_DB_PATH at it
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      backend: { condition: service_healthy }
+    ports:
+      - "127.0.0.1:8080:8080"
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+
+volumes:
+  pgdata:
+  hunterintel-data:

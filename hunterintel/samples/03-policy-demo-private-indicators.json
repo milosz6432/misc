@@ -1,0 +1,16 @@
+{
+  "title": "Safety controls demo — private and internal indicators",
+  "description": "Every indicator here is non-routable, reserved or internal. HunterIntel classifies them locally and refuses to send them to any remote provider, so internal naming and addressing never leak to third parties. The investigation is TLP:RED, which also marks all members do-not-share. Enriching them demonstrates the blocked / policy states; no network request is made for any of them.",
+  "tlp": "red",
+  "suggested_providers": ["local"],
+  "indicators": [
+    { "value": "10.0.0.5", "note": "RFC 1918 private address." },
+    { "value": "fileserver.corp.internal", "note": "Internal DNS suffix: remote DNS/RDAP/CT lookups are blocked." },
+    { "value": "http://192.168.1.10/admin", "note": "URL whose host is a private address." },
+    { "value": "203.0.113.50", "note": "TEST-NET-3 documentation address: not globally routable." },
+    { "value": "analyst@example.com", "note": "E-mail addresses are never sent as-is; DNS uses only the domain part and no third-party provider accepts e-mail." }
+  ],
+  "notes": [
+    "Try selecting a remote provider anyway: the query plan shows it as 'blocked' with the reason, and the server enforces this even for direct API calls."
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "title": "EICAR anti-malware test file",
+  "description": "The EICAR test file is a harmless, standardised string that every antivirus product is designed to flag, which makes it a safe way to exercise the hash workflow. The three hashes below identify the same 68-byte file. Hash lookups only send the digest to a provider you explicitly select — never the file. Use the 'Local tools' page to hash a copy of the file yourself and confirm the SHA-256 matches.",
+  "tlp": "clear",
+  "suggested_providers": ["local", "virustotal", "malwarebazaar", "otx", "urlhaus"],
+  "indicators": [
+    { "value": "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f", "note": "SHA-256 of the EICAR test file." },
+    { "value": "3395856ce81f2b7382dee72602f798b642f14140", "note": "SHA-1 of the EICAR test file." },
+    { "value": "44d88612fea8a8f36de82e1278abb02f", "note": "MD5 of the EICAR test file." }
+  ],
+  "notes": [
+    "Without any API keys only local analysis runs, and it recognises these as the standard test file. With a key, selected providers report what they have seen, and the keyed results stay labelled 'Provider claim'.",
+    "A hash carries no file-type information by itself — file type comes from a provider that has seen the file, or from hashing the file locally."
+  ]
+}

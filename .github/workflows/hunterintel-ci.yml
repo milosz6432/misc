@@ -1,0 +1,79 @@
+name: HunterIntel CI
+
+on:
+  push:
+    paths: ["hunterintel/**", ".github/workflows/hunterintel-ci.yml"]
+  pull_request:
+    paths: ["hunterintel/**", ".github/workflows/hunterintel-ci.yml"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: hunterintel
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: hunterintel, POSTGRES_PASSWORD: ci-only, POSTGRES_DB: hunterintel }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U hunterintel" --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: hunterintel/backend/pyproject.toml }
+      - name: Install
+        working-directory: hunterintel/backend
+        run: pip install -e ".[dev]"
+      - name: Lint
+        working-directory: hunterintel/backend
+        run: ruff check hunterintel tests alembic
+      - name: Tests (SQLite + Redis)
+        working-directory: hunterintel/backend
+        env: { HUNTERINTEL_TEST_REDIS_URL: "redis://localhost:6379/0" }
+        run: pytest -q
+      - name: Tests (PostgreSQL + Redis; includes migration check)
+        working-directory: hunterintel/backend
+        env:
+          HUNTERINTEL_TEST_REDIS_URL: "redis://localhost:6379/0"
+          HUNTERINTEL_TEST_DATABASE_URL: "postgresql+asyncpg://hunterintel:ci-only@localhost:5432/hunterintel"
+        run: pytest -q
+      - name: OpenAPI schema is up to date
+        working-directory: hunterintel/backend
+        run: |
+          python scripts/export_openapi.py /tmp/openapi.json
+          diff -u ../docs/openapi.json /tmp/openapi.json
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: hunterintel/frontend/package-lock.json }
+      - working-directory: hunterintel/frontend
+        run: npm ci --no-audit --no-fund
+      - working-directory: hunterintel/frontend
+        run: npm run typecheck && npm test && npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compose file is valid
+        env: { POSTGRES_PASSWORD: ci-only }
+        run: docker compose config -q
+      - name: Build backend image
+        run: docker build -t hunterintel-backend ./backend
+      - name: Build web image
+        run: docker build -t hunterintel-web ./frontend
